@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ category }} 的檔案</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+
+        h1 {
+            background-color: #4CAF50;
+            color: white;
+            margin: 0;
+            padding: 15px 20px;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        a {
+            color: #4CAF50;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .pdf-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .pdf-item {
+            width: 200px;
+            text-align: center;
+            background: #f1f1f1;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .pdf-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .pdf-item img {
+            width: 100%;
+            height: 150px; /* 固定高度，保持一致 */
+            object-fit: cover; /* 圖片自動適應 */
+            border-radius: 4px;
+        }
+
+        .pdf-item p {
+            margin: 10px 0 0;
+            font-size: 14px;
+            word-break: break-word;
+            color: #333;
+        }
+
+        .back-link {
+            display: block;
+            margin-bottom: 20px;
+            font-size: 16px;
+            text-decoration: none;
+            color: #4CAF50;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #388E3C;
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ category }} 的檔案</h1>
+
+    <div class="container">
+        <!-- 返回主頁按鈕 -->
+        <a href="/" class="back-link">返回主頁</a>
+
+        <!-- 文件展示區 -->
+        <div class="pdf-grid">
+            <!-- 動態生成文件卡片 -->
+            {% for file in files %}
+            <div class="pdf-item">
+                <!-- 點擊縮圖打開文件 -->
+                <a href="{{ file.path }}" target="_blank">
+                    <!-- 縮略圖顯示 -->
+                    <img src="{{ file.thumbnail }}" alt="{{ file.name }}">
+                </a>
+                <!-- 文件名稱 -->
+                <p>{{ file.name }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

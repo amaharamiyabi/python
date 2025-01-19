@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件上傳與分類管理</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+
+        h1 {
+            background-color: #4CAF50;
+            color: white;
+            margin: 0;
+            padding: 15px 20px;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="file"],
+        button,
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .categories ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .categories li {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f1f1f1;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .categories li a {
+            color: #4CAF50;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .categories li a:hover {
+            text-decoration: underline;
+        }
+
+        .categories li form {
+            display: inline;
+            margin: 0;
+        }
+
+        .categories li form button {
+            padding: 5px 10px;
+            font-size: 14px;
+            background-color: #e74c3c;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .categories li form button:hover {
+            background-color: #c0392b;
+        }
+
+        .new-category {
+            display: none;
+        }
+    </style>
+    <script>
+        function toggleNewCategoryInput(select) {
+            const newCategoryInput = document.getElementById('new-category-input');
+            if (select.value === 'new') {
+                newCategoryInput.style.display = 'block';
+            } else {
+                newCategoryInput.style.display = 'none';
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>文件上傳與分類管理</h1>
+    <div class="container">
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file">選擇文件：</label>
+                <input type="file" name="file" id="file" accept=".pdf,.png,.jpg,.jpeg,.txt,.docx" required>
+            </div>
+            <div class="form-group">
+                <label for="custom_name">自訂名稱：</label>
+                <input type="text" name="custom_name" id="custom_name" placeholder="檔案名稱（可選）">
+            </div>
+            <div class="form-group">
+                <label for="category">選擇分類名稱：</label>
+                <select name="category" id="category" onchange="toggleNewCategoryInput(this)" required>
+                    <option value="" disabled selected>請選擇分類</option>
+                    {% for category in categories %}
+                    <option value="{{ category }}">{{ category }}</option>
+                    {% endfor %}
+                    <option value="new">新增分類</option>
+                </select>
+                <div id="new-category-input" class="new-category">
+                    <label for="new_category">新增分類名稱：</label>
+                    <input type="text" name="new_category" id="new_category" placeholder="輸入新分類名稱">
+                </div>
+            </div>
+            <button type="submit">上傳</button>
+        </form>
+
+        <div class="categories">
+            <h2>分類列表</h2>
+            <ul>
+                {% for category in categories %}
+                <li>
+                    <a href="/category/{{ category }}">{{ category }}</a>
+                    <form action="/delete_category/{{ category }}" method="POST" style="display:inline;">
+                        <button type="submit" onclick="return confirm('確定要刪除此分類嗎？（該分類必須是空的）');">刪除分類</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
