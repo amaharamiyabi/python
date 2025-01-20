@@ -8,7 +8,10 @@ from urllib.parse import unquote
 app = Flask(__name__)
 CATEGORY_NAME_PATTERN = r'^[a-zA-Z0-9_\u4e00-\u9fa5 -]+$'
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'txt', 'docx'}
-DROPBOX_ACCESS_TOKEN = "sl.CE29ox1AqcN8KeZx7kXSGVdt9ENQKztXpUUkIaA5yggTZHSwbxsRG80PVaLE6yAfdNXo75HPvvR9XpHAmKMFAAbgFC_jIw3iSOUSNfGz6EhxEFZvr0FVUUN_HuA8NOAANR5YGv3sx6N6"  # 用您的 Dropbox Access Token 替換
+DROPBOX_ACCESS_TOKEN = "sl.u.AFewyBsYnHZofLhEBIJJMVJOIvaKuqMiRg6C_LeXlpHF4o578_YHpwRRO5qeK_Lx4fIxMRQgujMc1X-hHgO8LHITzi9D2I4aCxkXLqHb-VxgbkrCqLWQ4q_EckdtOCmMn5WRnY6AzbVDLUFF46XAqTkB-0oseJzUnWVCr8t17cWeA5SGfHJ1LgEVp_ItrNRH74NS-IPzH7SV3TmIpPoS5yUTYs7IwsXJxOEcP68vh9pvJRNsHDecyb-JYQM0j5IM_A32Wqwvyx0ovXaxXadXWlAmyOQGCwikQqFoBaKd4IuMruddOMvf_jD2q3k9yT8tM4odXGnHU7eLbHuBEsHTXfxOULdbZhazz0Rv4NFzPeOYkCxmCFUaBuIJH8YObP0TRdrmIJCFUqt1gMfgTZJQHAXELOB1oLNtYVFncxfrK3YqrGK3NuOwYzWjUQKtXlIPwM1-hyb1fnlP3K-U6qf_vfptsELRZgxTX47gw6_AC8tbGInFcf4U28OAWADQkv3TZ-mqVc_XaFKgkTZg06w90_GxX4FA2LMtJgLvy1w4T_7KTg36o3nkYIfqrky-EseNU9dE0rtlIu3-cHluvJ1BG5Q3l0uhsclROrU_VnWgtuvEK_TBw1uuGR_JmNPls-j9pkihjmN19phpPjHiv-gmu0jDie08i4PfqfKAs6JRIIXtYnagJT_wbuFRAbkzLi2gaR4UXFgf4f7Jc4-ZmoiB_sCDWzfMOtvcNEHogGULLAkXy6ZLbM8eGGcPo3QigOhKTaK4ph7rNedu2AMvv7Cpk2zgen8FWcKnbFXsamsZPfyYfWnLs6Dq3yV1KQcf3Y-wvdw1iqzvgEqVDykLcr-mzPbFmEyaQDYgRpOEuYqRuBzHZIY_XH8Z4BuXQa5t_dsln5FK1GR88eP2YoT74Y2REmX0b7UCLQ7283j31VeLEmwCbn8TJd7-HBzteXHiV0atkz25pBQxcFl3ZSia2TQ-TjPVzoCkI7AflZQmF9Jn8cas2khJ_LQ-Tir0pDpWLfOX2eCWliia80-TBzKQ0DMKVS_NxqSfTspP5XX5ZDNhYt_JdIoZm3LUZ9D06yoqp53NgLC4INS9F3FcAJNtHQgII1ljo28tO-Ia3Kmhbl53yOm4eKdGVwfIqmDXNj0gZSv4tiPlL4LOsLt_esV0S2XH_rSOL8RCVv6EObGv388XSy6d4ddqnvxbOG8_ee5-BSV4haDQeujCDXudC8ED4EoiyNFFHL9u2lNeutJOj9L7VotSmiiftb4pcDwoUP0QjSuJKE59QxSmFV2EmTc2jpfZgNvI"  # 用您的 Dropbox Access Token 替換
+DROPBOX_BASE_FOLDER = '/安聯'  # Dropbox 的基礎資料夾
+
+# 初始化 Dropbox 客戶端
 dbx = dropbox.Dropbox(DROPBOX_ACCESS_TOKEN)
 
 def is_valid_category_name(category):
@@ -17,50 +20,54 @@ def is_valid_category_name(category):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def upload_to_dropbox(file, category, filename):
-    """將檔案上傳到 Dropbox 並存到 '安聯' 資料夾"""
-    dropbox_path = f"/安聯/{category}/{filename}"  # 確保檔案儲存在 '安聯' 資料夾下
-    dbx.files_upload(file.read(), dropbox_path, mode=dropbox.files.WriteMode("overwrite"))
-    shared_link = dbx.sharing_create_shared_link_with_settings(dropbox_path)
-    return shared_link.url.replace('?dl=0', '?raw=1')  # 確保連結可直接訪問
+def upload_to_dropbox(file, path):
+    """將文件上傳到 Dropbox"""
+    dbx.files_upload(file.read(), path, mode=dropbox.files.WriteMode.overwrite)
+
+def list_dropbox_files(path):
+    """列出 Dropbox 資料夾中的所有文件"""
+    try:
+        result = dbx.files_list_folder(path)
+        return [entry.name for entry in result.entries]
+    except dropbox.exceptions.ApiError:
+        return []
+
+def download_from_dropbox(path):
+    """從 Dropbox 下載文件"""
+    _, res = dbx.files_download(path)
+    return res.content
 
 @app.route('/')
 def index():
-    # 假設有分類資料夾可以從 Dropbox 獲取資料
-    try:
-        response = dbx.files_list_folder("")
-        categories = [entry.name for entry in response.entries if isinstance(entry, dropbox.files.FolderMetadata)]
-    except dropbox.exceptions.ApiError as e:
-        categories = []
+    """首頁，顯示分類清單"""
+    categories = list_dropbox_files(DROPBOX_BASE_FOLDER)
     return render_template('index.html', categories=categories)
 
 @app.route('/category/<category>')
 def view_category(category):
+    """顯示分類中的文件"""
     if not is_valid_category_name(category):
         return "Invalid category name", 400
 
-    # 獲取該分類資料夾內的所有檔案
-    try:
-        response = dbx.files_list_folder(f"/{category}")
-        files = []
-        for entry in response.entries:
-            if isinstance(entry, dropbox.files.FileMetadata):
-                file_url = dbx.sharing_create_shared_link_with_settings(entry.path_lower).url.replace('?dl=0', '?raw=1')
-                file_extension = entry.name.rsplit('.', 1)[1].lower()
-                if file_extension == 'pdf':
-                    thumbnail = file_url  # 暫無縮略圖處理
-                elif file_extension in {'png', 'jpg', 'jpeg'}:
-                    thumbnail = file_url
-                else:
-                    thumbnail = "https://via.placeholder.com/150?text=FILE"
-                files.append({"name": entry.name, "path": file_url, "thumbnail": thumbnail})
-    except dropbox.exceptions.ApiError:
-        return "Category not found", 404
-
-    return render_template('category.html', category=category, files=files)
+    category_path = f"{DROPBOX_BASE_FOLDER}/{category}"
+    files = list_dropbox_files(category_path)
+    file_urls = []
+    for file in files:
+        file_extension = file.rsplit('.', 1)[1].lower()
+        if file_extension in {'png', 'jpg', 'jpeg'}:
+            thumbnail = f"/download/{category}/{file}"
+        else:
+            thumbnail = "https://via.placeholder.com/150?text=FILE"
+        file_urls.append({
+            "name": file,
+            "path": f"/download/{category}/{file}",
+            "thumbnail": thumbnail
+        })
+    return render_template('category.html', category=category, files=file_urls)
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    """上傳文件到 Dropbox"""
     if 'file' not in request.files:
         return "No file part", 400
 
@@ -69,6 +76,7 @@ def upload_file():
     category = request.form.get('category')
     new_category = request.form.get('new_category')
 
+    # 如果選擇新增分類，使用 new_category
     if category == 'new' and new_category:
         category = new_category
 
@@ -76,39 +84,40 @@ def upload_file():
         return "Invalid category name", 400
 
     filename = custom_name + f".{file.filename.rsplit('.', 1)[1].lower()}" if custom_name else file.filename
-    dropbox_path = f"/{category}/{filename}"
+    category_path = f"{DROPBOX_BASE_FOLDER}/{category}"
 
-    # 上傳到 Dropbox
-    try:
-        file_url = upload_to_dropbox(file, dropbox_path)
-    except dropbox.exceptions.ApiError as e:
-        return "Failed to upload file", 500
-
+    # 上傳文件到 Dropbox
+    upload_to_dropbox(file, f"{category_path}/{filename}")
     return redirect(url_for('view_category', category=category))
 
-@app.route('/delete/<category>/<filename>', methods=['POST'])
-def delete_file(category, filename):
+@app.route('/download/<category>/<filename>')
+def download_file(category, filename):
+    """從 Dropbox 下載文件"""
     if not is_valid_category_name(category):
         return "Invalid category name", 400
 
-    dropbox_path = f"/{category}/{filename}"
-    try:
-        dbx.files_delete_v2(dropbox_path)
-    except dropbox.exceptions.ApiError:
-        return "Failed to delete file", 500
+    file_path = f"{DROPBOX_BASE_FOLDER}/{category}/{filename}"
+    file_content = download_from_dropbox(file_path)
+    return file_content
 
+@app.route('/delete/<category>/<filename>', methods=['POST'])
+def delete_file(category, filename):
+    """從 Dropbox 刪除文件"""
+    if not is_valid_category_name(category):
+        return "Invalid category name", 400
+
+    file_path = f"{DROPBOX_BASE_FOLDER}/{category}/{filename}"
+    dbx.files_delete(file_path)
     return redirect(url_for('view_category', category=category))
 
 @app.route('/delete_category/<category>', methods=['POST'])
 def delete_category(category):
+    """從 Dropbox 刪除分類資料夾"""
     if not is_valid_category_name(category):
         return "Invalid category name", 400
 
-    try:
-        dbx.files_delete_v2(f"/{category}")
-    except dropbox.exceptions.ApiError:
-        return "Failed to delete category", 500
-
+    category_path = f"{DROPBOX_BASE_FOLDER}/{category}"
+    dbx.files_delete(category_path)
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
