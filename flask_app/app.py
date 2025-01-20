@@ -8,7 +8,7 @@ from urllib.parse import unquote
 app = Flask(__name__)
 CATEGORY_NAME_PATTERN = r'^[a-zA-Z0-9_\u4e00-\u9fa5 -]+$'
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'txt', 'docx'}
-DROPBOX_ACCESS_TOKEN = "sl.u.AFewyBsYnHZofLhEBIJJMVJOIvaKuqMiRg6C_LeXlpHF4o578_YHpwRRO5qeK_Lx4fIxMRQgujMc1X-hHgO8LHITzi9D2I4aCxkXLqHb-VxgbkrCqLWQ4q_EckdtOCmMn5WRnY6AzbVDLUFF46XAqTkB-0oseJzUnWVCr8t17cWeA5SGfHJ1LgEVp_ItrNRH74NS-IPzH7SV3TmIpPoS5yUTYs7IwsXJxOEcP68vh9pvJRNsHDecyb-JYQM0j5IM_A32Wqwvyx0ovXaxXadXWlAmyOQGCwikQqFoBaKd4IuMruddOMvf_jD2q3k9yT8tM4odXGnHU7eLbHuBEsHTXfxOULdbZhazz0Rv4NFzPeOYkCxmCFUaBuIJH8YObP0TRdrmIJCFUqt1gMfgTZJQHAXELOB1oLNtYVFncxfrK3YqrGK3NuOwYzWjUQKtXlIPwM1-hyb1fnlP3K-U6qf_vfptsELRZgxTX47gw6_AC8tbGInFcf4U28OAWADQkv3TZ-mqVc_XaFKgkTZg06w90_GxX4FA2LMtJgLvy1w4T_7KTg36o3nkYIfqrky-EseNU9dE0rtlIu3-cHluvJ1BG5Q3l0uhsclROrU_VnWgtuvEK_TBw1uuGR_JmNPls-j9pkihjmN19phpPjHiv-gmu0jDie08i4PfqfKAs6JRIIXtYnagJT_wbuFRAbkzLi2gaR4UXFgf4f7Jc4-ZmoiB_sCDWzfMOtvcNEHogGULLAkXy6ZLbM8eGGcPo3QigOhKTaK4ph7rNedu2AMvv7Cpk2zgen8FWcKnbFXsamsZPfyYfWnLs6Dq3yV1KQcf3Y-wvdw1iqzvgEqVDykLcr-mzPbFmEyaQDYgRpOEuYqRuBzHZIY_XH8Z4BuXQa5t_dsln5FK1GR88eP2YoT74Y2REmX0b7UCLQ7283j31VeLEmwCbn8TJd7-HBzteXHiV0atkz25pBQxcFl3ZSia2TQ-TjPVzoCkI7AflZQmF9Jn8cas2khJ_LQ-Tir0pDpWLfOX2eCWliia80-TBzKQ0DMKVS_NxqSfTspP5XX5ZDNhYt_JdIoZm3LUZ9D06yoqp53NgLC4INS9F3FcAJNtHQgII1ljo28tO-Ia3Kmhbl53yOm4eKdGVwfIqmDXNj0gZSv4tiPlL4LOsLt_esV0S2XH_rSOL8RCVv6EObGv388XSy6d4ddqnvxbOG8_ee5-BSV4haDQeujCDXudC8ED4EoiyNFFHL9u2lNeutJOj9L7VotSmiiftb4pcDwoUP0QjSuJKE59QxSmFV2EmTc2jpfZgNvI"  # 替換為你的 Dropbox Access Token
+DROPBOX_ACCESS_TOKEN = "sl.u.AFewyBsYnHZofLhEBIJJMVJOIvaKuqMiRg6C_LeXlpHF4o578_YHpwRRO5qeK_Lx4fIxMRQgujMc1X-hHgO8LHITzi9D2I4aCxkXLqHb-VxgbkrCqLWQ4q_EckdtOCmMn5WRnY6AzbVDLUFF46XAqTkB-0oseJzUnWVCr8t17cWeA5SGfHJ1LgEVp_ItrNRH74NS-IPzH7SV3TmIpPoS5yUTYs7IwsXJxOEcP68vh9pvJRNsHDecyb-JYQM0j5IM_A32Wqwvyx0ovXaxXadXWlAmyOQGCwikQqFoBaKd4IuMruddOMvf_jD2q3k9yT8tM4odXGnHU7eLbHuBEsHTXfxOULdbZhazz0Rv4NFzPeOYkCxmCFUaBuIJH8YObP0TRdrmIJCFUqt1gMfgTZJQHAXELOB1oLNtYVFncxfrK3YqrGK3NuOwYzWjUQKtXlIPwM1-hyb1fnlP3K-U6qf_vfptsELRZgxTX47gw6_AC8tbGInFcf4U28OAWADQkv3TZ-mqVc_XaFKgkTZg06w90_GxX4FA2LMtJgLvy1w4T_7KTg36o3nkYIfqrky-EseNU9dE0rtlIu3-cHluvJ1BG5Q3l0uhsclROrU_VnWgtuvEK_TBw1uuGR_JmNPls-j9pkihjmN19phpPjHiv-gmu0jDie08i4PfqfKAs6JRIIXtYnagJT_wbuFRAbkzLi2gaR4UXFgf4f7Jc4-ZmoiB_sCDWzfMOtvcNEHogGULLAkXy6ZLbM8eGGcPo3QigOhKTaK4ph7rNedu2AMvv7Cpk2zgen8FWcKnbFXsamsZPfyYfWnLs6Dq3yV1KQcf3Y-wvdw1iqzvgEqVDykLcr-mzPbFmEyaQDYgRpOEuYqRuBzHZIY_XH8Z4BuXQa5t_dsln5FK1GR88eP2YoT74Y2REmX0b7UCLQ7283j31VeLEmwCbn8TJd7-HBzteXHiV0atkz25pBQxcFl3ZSia2TQ-TjPVzoCkI7AflZQmF9Jn8cas2khJ_LQ-Tir0pDpWLfOX2eCWliia80-TBzKQ0DMKVS_NxqSfTspP5XX5ZDNhYt_JdIoZm3LUZ9D06yoqp53NgLC4INS9F3FcAJNtHQgII1ljo28tO-Ia3Kmhbl53yOm4eKdGVwfIqmDXNj0gZSv4tiPlL4LOsLt_esV0S2XH_rSOL8RCVv6EObGv388XSy6d4ddqnvxbOG8_ee5-BSV4haDQeujCDXudC8ED4EoiyNFFHL9u2lNeutJOj9L7VotSmiiftb4pcDwoUP0QjSuJKE59QxSmFV2EmTc2jpfZgNv"  # 替換為你的 Dropbox Access Token
 DROPBOX_BASE_FOLDER = '/allianz-material'  # Dropbox 的基礎資料夾
 
 # 初始化 Dropbox 客戶端
@@ -37,11 +37,27 @@ def download_from_dropbox(path):
     _, res = dbx.files_download(path)
     return res.content
 
+def count_all_files(base_folder):
+    """統計 Dropbox 基礎資料夾下的所有文件數量"""
+    total_files = 0
+    try:
+        result = dbx.files_list_folder(base_folder, recursive=True)
+        for entry in result.entries:
+            if isinstance(entry, dropbox.files.FileMetadata):
+                total_files += 1
+    except dropbox.exceptions.ApiError:
+        pass
+    return total_files
+
 @app.route('/')
 def index():
-    """首頁，顯示分類清單"""
+    """首頁，顯示分類清單與文件總數"""
     categories = list_dropbox_files(DROPBOX_BASE_FOLDER)
-    return render_template('index.html', categories=categories)
+    total_files = count_all_files(DROPBOX_BASE_FOLDER)
+    category_file_counts = {
+        category: len(list_dropbox_files(f"{DROPBOX_BASE_FOLDER}/{category}")) for category in categories
+    }
+    return render_template('index.html', categories=categories, total_files=total_files, category_file_counts=category_file_counts)
 
 @app.route('/category/<category>')
 def view_category(category):
@@ -63,7 +79,7 @@ def view_category(category):
             "path": f"/download/{category}/{file}",
             "thumbnail": thumbnail
         })
-    return render_template('category.html', category=category, files=file_urls)
+    return render_template('category.html', category=category, files=file_urls, file_count=len(files))
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -96,33 +112,39 @@ def download_file(category, filename):
     if not is_valid_category_name(category):
         return "Invalid category name", 400
 
+    # 解碼檔案名稱
+    filename = unquote(filename)
     file_path = f"{DROPBOX_BASE_FOLDER}/{category}/{filename}"
-    file_content = download_from_dropbox(file_path)
-    file_extension = filename.rsplit('.', 1)[1].lower()
 
-    # 判斷文件的 MIME 類型
-    mime_type = {
-        'pdf': 'application/pdf',
-        'png': 'image/png',
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'txt': 'text/plain',
-        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    }.get(file_extension, 'application/octet-stream')
-
-    return Response(file_content, mimetype=mime_type, headers={
-        "Content-Disposition": f"attachment; filename={filename}"
-    })
+    try:
+        file_content = download_from_dropbox(file_path)
+        # 推斷 MIME 類型
+        mime_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+        return Response(
+            file_content,
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"',
+                'Content-Type': mime_type,
+            },
+        )
+    except Exception as e:
+        return f"Error while downloading the file: {e}", 500
 
 @app.route('/delete/<category>/<filename>', methods=['POST'])
 def delete_file(category, filename):
-    """從 Dropbox 刪除文件"""
+    """從 Dropbox 刪除單個文件"""
     if not is_valid_category_name(category):
         return "Invalid category name", 400
 
+    # 解碼檔案名稱
+    filename = unquote(filename)
     file_path = f"{DROPBOX_BASE_FOLDER}/{category}/{filename}"
-    dbx.files_delete(file_path)
-    return redirect(url_for('view_category', category=category))
+
+    try:
+        dbx.files_delete(file_path)
+        return redirect(url_for('view_category', category=category))
+    except Exception as e:
+        return f"Error while deleting the file: {e}", 500
 
 @app.route('/delete_category/<category>', methods=['POST'])
 def delete_category(category):
@@ -131,8 +153,11 @@ def delete_category(category):
         return "Invalid category name", 400
 
     category_path = f"{DROPBOX_BASE_FOLDER}/{category}"
-    dbx.files_delete(category_path)
-    return redirect(url_for('index'))
+    try:
+        dbx.files_delete(category_path)
+        return redirect(url_for('index'))
+    except Exception as e:
+        return f"Error while deleting the category: {e}", 500
 
 if __name__ == '__main__':
     app.run(debug=True)
