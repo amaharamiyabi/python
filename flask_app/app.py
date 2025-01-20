@@ -8,7 +8,7 @@ from urllib.parse import unquote
 app = Flask(__name__)
 CATEGORY_NAME_PATTERN = r'^[a-zA-Z0-9_\u4e00-\u9fa5 -]+$'
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'txt', 'docx'}
-DROPBOX_ACCESS_TOKEN = "YOUR_DROPBOX_ACCESS_TOKEN"  # 用您的 Dropbox Access Token 替換
+DROPBOX_ACCESS_TOKEN = "sl.CE29ox1AqcN8KeZx7kXSGVdt9ENQKztXpUUkIaA5yggTZHSwbxsRG80PVaLE6yAfdNXo75HPvvR9XpHAmKMFAAbgFC_jIw3iSOUSNfGz6EhxEFZvr0FVUUN_HuA8NOAANR5YGv3sx6N6"  # 用您的 Dropbox Access Token 替換
 dbx = dropbox.Dropbox(DROPBOX_ACCESS_TOKEN)
 
 def is_valid_category_name(category):
