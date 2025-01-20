@@ -65,8 +65,8 @@
 
         .pdf-item img {
             width: 100%;
-            height: 150px; /* 固定高度，保持一致 */
-            object-fit: cover; /* 圖片自動適應 */
+            height: 150px;
+            object-fit: cover;
             border-radius: 4px;
         }
 
@@ -95,20 +95,13 @@
     <h1>{{ category }} 的檔案</h1>
 
     <div class="container">
-        <!-- 返回主頁按鈕 -->
         <a href="/" class="back-link">返回主頁</a>
-
-        <!-- 文件展示區 -->
         <div class="pdf-grid">
-            <!-- 動態生成文件卡片 -->
             {% for file in files %}
             <div class="pdf-item">
-                <!-- 點擊縮圖打開文件 -->
                 <a href="{{ file.path }}" target="_blank">
-                    <!-- 縮略圖顯示 -->
                     <img src="{{ file.thumbnail }}" alt="{{ file.name }}">
                 </a>
-                <!-- 文件名稱 -->
                 <p>{{ file.name }}</p>
             </div>
             {% endfor %}

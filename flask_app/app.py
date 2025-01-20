@@ -1,19 +1,15 @@
-from flask import Flask, render_template, request, send_from_directory, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for
 import os
 import re
-import shutil
 import fitz  # PyMuPDF 用於生成縮略圖
+import dropbox  # 用於與 Dropbox 交互
 from urllib.parse import unquote
 
 app = Flask(__name__)
 CATEGORY_NAME_PATTERN = r'^[a-zA-Z0-9_\u4e00-\u9fa5 -]+$'
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'txt', 'docx'}
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-BASE_UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
-app.config['BASE_UPLOAD_FOLDER'] = BASE_UPLOAD_FOLDER
-
-# 確保主目錄存在
-os.makedirs(BASE_UPLOAD_FOLDER, exist_ok=True)
+DROPBOX_ACCESS_TOKEN = "YOUR_DROPBOX_ACCESS_TOKEN"  # 用您的 Dropbox Access Token 替換
+dbx = dropbox.Dropbox(DROPBOX_ACCESS_TOKEN)
 
 def is_valid_category_name(category):
     return re.match(CATEGORY_NAME_PATTERN, category) and '..' not in category and '/' not in category
@@ -21,16 +17,21 @@ def is_valid_category_name(category):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def generate_thumbnail(pdf_path, thumbnail_path):
-    doc = fitz.open(pdf_path)
-    page = doc[0]
-    pix = page.get_pixmap()
-    os.makedirs(os.path.dirname(thumbnail_path), exist_ok=True)
-    pix.save(thumbnail_path)
+def upload_to_dropbox(file, category, filename):
+    """將檔案上傳到 Dropbox 並存到 '安聯' 資料夾"""
+    dropbox_path = f"/安聯/{category}/{filename}"  # 確保檔案儲存在 '安聯' 資料夾下
+    dbx.files_upload(file.read(), dropbox_path, mode=dropbox.files.WriteMode("overwrite"))
+    shared_link = dbx.sharing_create_shared_link_with_settings(dropbox_path)
+    return shared_link.url.replace('?dl=0', '?raw=1')  # 確保連結可直接訪問
 
 @app.route('/')
 def index():
-    categories = sorted(os.listdir(app.config['BASE_UPLOAD_FOLDER']))
+    # 假設有分類資料夾可以從 Dropbox 獲取資料
+    try:
+        response = dbx.files_list_folder("")
+        categories = [entry.name for entry in response.entries if isinstance(entry, dropbox.files.FolderMetadata)]
+    except dropbox.exceptions.ApiError as e:
+        categories = []
     return render_template('index.html', categories=categories)
 
 @app.route('/category/<category>')
@@ -38,106 +39,76 @@ def view_category(category):
     if not is_valid_category_name(category):
         return "Invalid category name", 400
 
-    category_path = os.path.join(app.config['BASE_UPLOAD_FOLDER'], category)
-    if not os.path.exists(category_path):
+    # 獲取該分類資料夾內的所有檔案
+    try:
+        response = dbx.files_list_folder(f"/{category}")
+        files = []
+        for entry in response.entries:
+            if isinstance(entry, dropbox.files.FileMetadata):
+                file_url = dbx.sharing_create_shared_link_with_settings(entry.path_lower).url.replace('?dl=0', '?raw=1')
+                file_extension = entry.name.rsplit('.', 1)[1].lower()
+                if file_extension == 'pdf':
+                    thumbnail = file_url  # 暫無縮略圖處理
+                elif file_extension in {'png', 'jpg', 'jpeg'}:
+                    thumbnail = file_url
+                else:
+                    thumbnail = "https://via.placeholder.com/150?text=FILE"
+                files.append({"name": entry.name, "path": file_url, "thumbnail": thumbnail})
+    except dropbox.exceptions.ApiError:
         return "Category not found", 404
 
-    files = os.listdir(category_path)
-    file_urls = []
-    for file in files:
-        file_extension = file.rsplit('.', 1)[1].lower()
-        file_path = f"/download/{category}/{file}"
-        if file_extension == 'pdf':
-            thumbnail = f"/thumbnails/{category}/{file}.png"
-        elif file_extension in {'png', 'jpg', 'jpeg'}:
-            thumbnail = file_path  # 圖片直接作為縮略圖
-        else:
-            thumbnail = "https://via.placeholder.com/150?text=FILE"  # 其他文件用占位符
-        file_urls.append({
-            "name": file,
-            "path": file_path,
-            "thumbnail": thumbnail
-        })
-    return render_template('category.html', category=category, files=file_urls)
+    return render_template('category.html', category=category, files=files)
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
-        return "No file part"
+        return "No file part", 400
 
     file = request.files['file']
     custom_name = request.form.get('custom_name')
     category = request.form.get('category')
     new_category = request.form.get('new_category')
 
-    # 如果選擇新增分類，使用 new_category
     if category == 'new' and new_category:
         category = new_category
 
     if not category or not is_valid_category_name(category):
         return "Invalid category name", 400
 
-    category_path = os.path.join(app.config['BASE_UPLOAD_FOLDER'], category)
-    os.makedirs(category_path, exist_ok=True)
+    filename = custom_name + f".{file.filename.rsplit('.', 1)[1].lower()}" if custom_name else file.filename
+    dropbox_path = f"/{category}/{filename}"
 
-    if file and allowed_file(file.filename):
-        file_extension = file.filename.rsplit('.', 1)[1].lower()
-        filename = custom_name + f".{file_extension}" if custom_name else file.filename
-        save_path = os.path.join(category_path, filename)
-        file.save(save_path)
+    # 上傳到 Dropbox
+    try:
+        file_url = upload_to_dropbox(file, dropbox_path)
+    except dropbox.exceptions.ApiError as e:
+        return "Failed to upload file", 500
 
-        # 如果是 PDF 文件，生成縮略圖
-        if file_extension == 'pdf':
-            thumbnail_path = os.path.join(BASE_DIR, 'thumbnails', category, f"{filename}.png")
-            generate_thumbnail(save_path, thumbnail_path)
-
-        return redirect(url_for('view_category', category=category))
-    return "Invalid file type. Allowed types are: pdf, png, jpg, jpeg, txt, docx."
-
-@app.route('/thumbnails/<path:filename>')
-def get_thumbnail(filename):
-    thumbnail_dir = os.path.join(BASE_DIR, 'thumbnails')
-    return send_from_directory(thumbnail_dir, filename)
-
-@app.route('/download/<category>/<filename>')
-def download_file(category, filename):
-    filename = unquote(filename)
-
-    if not is_valid_category_name(category):
-        return "Invalid category name", 400
-
-    category_path = os.path.join(app.config['BASE_UPLOAD_FOLDER'], category)
-    if not os.path.exists(category_path):
-        return "Category not found", 404
-
-    file_path = os.path.join(category_path, filename)
-    if not os.path.exists(file_path):
-        return "File not found", 404
-
-    return send_from_directory(category_path, filename)
+    return redirect(url_for('view_category', category=category))
 
 @app.route('/delete/<category>/<filename>', methods=['POST'])
 def delete_file(category, filename):
     if not is_valid_category_name(category):
         return "Invalid category name", 400
 
-    category_path = os.path.join(app.config['BASE_UPLOAD_FOLDER'], category)
-    file_path = os.path.join(category_path, filename)
-    if os.path.exists(file_path):
-        os.remove(file_path)
-        return redirect(url_for('view_category', category=category))
-    return "File not found", 404
+    dropbox_path = f"/{category}/{filename}"
+    try:
+        dbx.files_delete_v2(dropbox_path)
+    except dropbox.exceptions.ApiError:
+        return "Failed to delete file", 500
+
+    return redirect(url_for('view_category', category=category))
 
 @app.route('/delete_category/<category>', methods=['POST'])
 def delete_category(category):
     if not is_valid_category_name(category):
         return "Invalid category name", 400
 
-    category_path = os.path.join(app.config['BASE_UPLOAD_FOLDER'], category)
-    if not os.path.exists(category_path):
-        return "Category not found", 404
+    try:
+        dbx.files_delete_v2(f"/{category}")
+    except dropbox.exceptions.ApiError:
+        return "Failed to delete category", 500
 
-    shutil.rmtree(category_path)
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
